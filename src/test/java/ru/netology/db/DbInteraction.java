@@ -27,9 +27,9 @@ public class DbInteraction {
 
         try (var conn = getConnection()) {
             runner.update(conn, "DELETE from card_transactions;");
-            runner.execute(conn, "DELETE from cards;");
-            runner.execute(conn, "DELETE from auth_codes;");
-            runner.execute(conn, "DELETE from users;");
+            runner.update(conn, "DELETE from cards;");
+            runner.update(conn, "DELETE from auth_codes;");
+            runner.update(conn, "DELETE from users;");
         }
     }
 
