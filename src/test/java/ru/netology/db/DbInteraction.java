@@ -3,6 +3,7 @@ package ru.netology.db;
 import lombok.SneakyThrows;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
 import ru.netology.data.DataGenerator;
 import ru.netology.mode.User;
 
@@ -46,31 +47,21 @@ public class DbInteraction {
 
     @SneakyThrows
     public User findUserByLogin(String login) {
-        var userSQL = "SELECT * FROM users WHERE login = ?;";
         var runner = new QueryRunner();
+        var userSQL = "SELECT * FROM users WHERE login = ?;";
 
         try (var conn = getConnection()) {
-            var user = runner.query(conn, userSQL, new BeanHandler<>(User.class), login);
-            return user;
+            return runner.query(conn, userSQL, new BeanHandler<>(User.class), login);
         }
     }
 
     @SneakyThrows
     public String getVerificationCode(String userId) {
+        var runner = new QueryRunner();
         var codeSQL = "SELECT code FROM auth_codes WHERE user_id = ? ORDER BY created DESC;";
 
-        try (
-                var conn = getConnection();
-                var codeStmt = conn.prepareStatement(codeSQL)
-        ) {
-            codeStmt.setString(1, userId);
-            try (var rs = codeStmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("code");
-                } else {
-                    return null;
-                }
-            }
+        try (var conn = getConnection()) {
+            return runner.query(conn, codeSQL, new ScalarHandler<>(), userId);
         }
     }
 }

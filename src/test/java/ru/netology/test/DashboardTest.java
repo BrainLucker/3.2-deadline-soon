@@ -13,7 +13,11 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class DashboardTest { // java -jar .\artifacts\app-deadline.jar -P:jdbc.url=jdbc:mysql://localhost:3306/app -P:jdbc.user=admin -P:jdbc.password=pass -port=7777
+/* Запуск SUT:
+java -jar .\artifacts\app-deadline.jar -P:jdbc.url=jdbc:mysql://localhost:3306/app -P:jdbc.user=admin -P:jdbc.password=pass -port=7777
+ */
+
+public class DashboardTest {
     private static final DbInteraction db = new DbInteraction();
     private DataGenerator.UserInfo userInfo;
 
