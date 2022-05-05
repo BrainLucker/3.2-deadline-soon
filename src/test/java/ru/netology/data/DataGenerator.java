@@ -18,7 +18,12 @@ public class DataGenerator {
         return faker.name().username();
     }
 
-    public static String generatePassword() {
+    public static String generateRandomPassword() {
+        val faker = new Faker();
+        return faker.internet().password(9, 10);
+    }
+
+    public static String generateValidPassword() {
         return "qwerty123";
     }
 
@@ -27,7 +32,11 @@ public class DataGenerator {
         }
 
         public static UserInfo generateActiveUser() {
-            return new UserInfo(generateId(), generateLogin(), generatePassword(), "active");
+            return new UserInfo(generateId(), generateLogin(), generateValidPassword(), "active");
+        }
+
+        public static UserInfo setInvalidPassword(UserInfo user) {
+            return new UserInfo(user.id, user.login, generateRandomPassword(), user.status);
         }
     }
 

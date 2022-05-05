@@ -1,6 +1,7 @@
 package ru.netology.test;
 
 import com.codeborne.selenide.Configuration;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,67 +9,62 @@ import ru.netology.data.DataGenerator;
 import ru.netology.db.DbInteraction;
 import ru.netology.page.LoginPage;
 
-import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
-/* Запуск SUT:
-java -jar .\artifacts\app-deadline.jar -P:jdbc.url=jdbc:mysql://localhost:3306/app -P:jdbc.user=admin -P:jdbc.password=pass -port=7777
- */
+import static ru.netology.data.DataGenerator.Registration.setInvalidPassword;
 
 public class DashboardTest {
     private static final DbInteraction db = new DbInteraction();
     private DataGenerator.UserInfo userInfo;
+    private LoginPage loginPage;
 
     @BeforeEach
     private void setup() {
         Configuration.holdBrowserOpen = true;
         Configuration.browserSize = "1000x800";
-        userInfo = DataGenerator.Registration.generateActiveUser();
+
+        userInfo = DataGenerator.Registration.generateActiveUser(); // генерируем нового пользователя
+        db.addUser(userInfo); // заносим нового пользователя в БД
+        loginPage = open("http://localhost:7777", LoginPage.class);
     }
 
-    @AfterAll
-    static void cleanDB() {
-        db.clearData();
-    }
+//    @AfterAll
+//    static void cleanDB() {
+//        db.clearData();
+//    }
 
     @Test
+    @SneakyThrows
     public void shouldLoginAndVerify() {
-        var userId = userInfo.getId();
-
-        db.addUser(userInfo); // заносим нового пользователя в БД
-        var loginPage = open("http://localhost:7777", LoginPage.class);
         var verificationPage = loginPage.validLogin(userInfo); // логинимся через UI
-        var verificationCode = db.getVerificationCode(userId); // получаем смс-код из БД
+        Thread.sleep(100);
+        var verificationCode = db.getVerificationCode(userInfo); // получаем смс-код из БД
         var dashboard = verificationPage.validVerify(verificationCode); // вводим проверочный код через UI
 
-        dashboard.getHeading().shouldBe(visible);
+        dashboard.checkIfVisible();
     }
 
     @Test
     public void shouldNotVerify() {
-        db.addUser(userInfo); // заносим нового пользователя в БД
-        var loginPage = open("http://localhost:7777", LoginPage.class);
         var verificationPage = loginPage.validLogin(userInfo); // логинимся через UI
-        var errorNotification = verificationPage.invalidVerify("0000"); // вводим неверный проверочный код через UI
+        verificationPage.verify("0000"); // вводим неверный проверочный код через UI
 
-        errorNotification.shouldBe(visible).shouldHave(text("Неверно указан код! Попробуйте ещё раз."));
+        verificationPage.checkIfErrorAppears();
     }
 
     @Test
+    @SneakyThrows
     public void shouldBlockSystem() {
-        var userId = userInfo.getId();
+        var invalidUserInfo = setInvalidPassword(userInfo);
 
-        db.addUser(userInfo); // заносим нового пользователя в БД
-        var loginPage = open("http://localhost:7777", LoginPage.class);
-        loginPage.invalidLogin(userInfo); // трижды пытаемся войти с неверным паролем через UI
-        loginPage.invalidLogin(userInfo);
-        loginPage.invalidLogin(userInfo);
-        var errorNotification = loginPage.validLoginAfterTreeAttempts(userInfo); // логинимся с верным паролем
-        var verificationCode = db.getVerificationCode(userId); // проверяем появился ли смс-код в БД
+        loginPage.login(invalidUserInfo); // трижды пытаемся войти с неверным паролем через UI
+        loginPage.login(invalidUserInfo);
+        loginPage.login(invalidUserInfo);
+        loginPage.login(userInfo); // логинимся с верным паролем
+        Thread.sleep(100);
+        var verificationCode = db.getVerificationCode(userInfo); // проверяем появился ли смс-код в БД
 
         assertNull(verificationCode);
-        errorNotification.shouldBe(visible);
+        loginPage.checkIfErrorAppears();
     }
 }
